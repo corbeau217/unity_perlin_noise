@@ -1,16 +1,9 @@
 #define blockWidth 16
 #define blockHeight 16
+#define noiseregionsize 100
 
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel WhiteNoise2
-
-// ==================================================
-// ==================================================
-
-// seems the common way to generate random values
-float randomValue(float2 uvCoordinates){
-    return frac(sin(dot(uvCoordinates, float2(12.9898, 78.233)))*43758.5453);
-}
+#pragma kernel PerlinGridPrep
 
 // ==================================================
 // ==================================================
@@ -19,22 +12,34 @@ float randomValue(float2 uvCoordinates){
 RWTexture2D<float4> ResultImage;
 int textureWidth;
 int textureHeight;
-int seed;
+
+
+// cells which we have vectors at the corners
+int cellCountX;
+int cellCountY;
+
+
 
 [numthreads(blockWidth,blockHeight,1)]
-void WhiteNoise2 (uint3 id : SV_DispatchThreadID)
+void PerlinGridPrep (uint3 id : SV_DispatchThreadID)
 {
     // convert to floats, we dont like doing that mid equation?
     float2 texelLocation = float2( id.x, id.y);
     float2 outputResolution = float2( textureWidth, textureHeight);
+    float2 cellCount = float2( cellCountX, cellCountY );
 
     // find where we are in the noise texture space
     float2 uvCoords = float2( (texelLocation.x / outputResolution.x), (texelLocation.y / outputResolution.y) );
-    
-    // generate
-    float noiseValue = randomValue(uvCoords);
-    float4 noiseColour = float4( noiseValue, noiseValue, noiseValue, 1.0 );
+
+    // make sure that we're within the grid
+    float2 gridPositionFraction = float2(uvCoords.x%1.0*cellCount.x, uvCoords.y%1.0*cellCount.y );
+
+    // now find the cell locations
+    float2 cellUV = float2( gridPositionFraction.x%1.0,gridPositionFraction.y%1.0 );
+
+    // convert to colour
+    float4 outputColour = float4( cellUV.x, cellUV.y, 0.0, 1.0 );
 
     // save it
-    ResultImage[id.xy] = noiseColour;
+    ResultImage[id.xy] = outputColour;
 }

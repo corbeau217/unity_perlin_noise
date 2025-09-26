@@ -15,15 +15,18 @@ public class ShaderManager : MonoBehaviour
     [Space(10)]
     public bool performedCompute = false;
     public bool showingOnPreview = false;
+    public bool safeToPerform = true;
     
     void Start(){
+        SettingOverrides();
         this.PrepareRenderTextures();
     }
     void Update(){
-        if(!performedCompute){
+        TestReadyToPerform();
+        if(!performedCompute && safeToPerform){
             this.PerformComputeShader();
         }
-        if(showingOnPreview){
+        if(showingOnPreview && safeToPerform){
             this.UpdatePreview();
         }
     }
@@ -49,8 +52,10 @@ public class ShaderManager : MonoBehaviour
         performedCompute = true;
     }
 
-
     // stuff be overriden in derived classes
+    public virtual void SettingOverrides(){
+        //...
+    }
     public virtual void AssignComputeBuffers(int kernelIndex){
         computeShader.SetTexture(kernelIndex, ouputName, outputTexture);
 
@@ -60,11 +65,25 @@ public class ShaderManager : MonoBehaviour
     public virtual void UpdatePreview(){
         // ...
     }
+    // override this with other behaviour if needed
+    public virtual void TestReadyToPerform(){
+        // TODO : check if the compute shader is supported
+        safeToPerform = true;
+    }
 
     public void SetShowing(bool shouldShow){
         showingOnPreview = shouldShow;
     }
     public string GetKernelName(){
         return computeShaderKernel;
+    }
+    public bool HasPerformedCompute(){
+        return performedCompute;
+    }
+    public RenderTexture GetResultTexture(){
+        return outputTexture;
+    }
+    public Vector2Int GetOutputDimensions(){
+        return outputDimensions;
     }
 }

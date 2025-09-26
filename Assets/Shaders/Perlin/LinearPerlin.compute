@@ -1,0 +1,56 @@
+#define blockWidth 16
+#define blockHeight 16
+#define noiseregionsize 100
+
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel LinearPerlin
+
+// ==================================================
+// ==================================================
+
+
+RWTexture2D<float4> ResultImage;
+int textureWidth;
+int textureHeight;
+
+RWTexture2D<float4> InputNoiseImage;
+int noiseTextureWidth;
+int noiseTextureHeight;
+
+// cells which we have vectors at the corners
+int cellCountX;
+int cellCountY;
+
+
+
+[numthreads(blockWidth,blockHeight,1)]
+void LinearPerlin (uint3 id : SV_DispatchThreadID)
+{
+    // convert to floats, we dont like doing that mid equation?
+    float2 texelLocation = float2( id.x, id.y);
+    float2 outputResolution = float2( textureWidth, textureHeight);
+    float2 cellCount = float2( cellCountX, cellCountY );
+
+    // find where we are in the noise texture space
+    float2 uvCoords = float2( (texelLocation.x / outputResolution.x), (texelLocation.y / outputResolution.y) );
+
+    // make sure that we're within the grid
+    float2 gridPositionFraction = float2(uvCoords.x%1.0*cellCount.x, uvCoords.y%1.0*cellCount.y );
+
+    // now find the cell locations
+    float2 cellUV = float2( gridPositionFraction.x%1.0,gridPositionFraction.y%1.0 );
+
+    // prepare a location in the noise texture for that cell
+    uint2 noiseLocation = uint2( floor(gridPositionFraction.x)%noiseTextureWidth, floor(gridPositionFraction.y)%noiseTextureHeight );
+
+    // TODO : now try grab the other 3 corners
+    // TODO : get corner difference vectors
+    // TODO : then do the dot products of difference vector to cooresponding corner vector
+    // TODO :  interpolation of the 4 values
+
+    // grab the noise colour
+    float4 noiseColour = InputNoiseImage[noiseLocation.xy];
+
+    // save it
+    ResultImage[id.xy] = noiseColour;
+}
