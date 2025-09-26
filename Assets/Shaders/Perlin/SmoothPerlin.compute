@@ -3,22 +3,42 @@
 #define noiseregionsize 100
 
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel LinearPerlin
+#pragma kernel SmoothPerlin
 
 // ==================================================
 // ==================================================
 
 float bilinearInterpolation(float bottomLeft, float bottomRight, float topLeft, float topRight, float2 t){
+    // ==== X then Y ====
+
     // 1 dimensional interpolation across X axis
     float linearBottom = lerp(bottomLeft,bottomRight,t.x);
     float linearTop = lerp(topLeft,topRight,t.x);
 
     // now interpolate them together to make it 2D
     //  but save it as a variable first because otherwise it does weird stuff during compilation?
-    float bilinearAll = lerp(linearBottom,linearTop,t.y);
+    float bilinearXY = lerp(linearBottom,linearTop,t.y);
 
-    return bilinearAll;
+    // ==== Y then X ====
+
+    // 1 dimensional interpolation across Y axis
+    float linearLeft = lerp(bottomLeft,topLeft,t.y);
+    float linearRight = lerp(bottomRight,topRight,t.y);
+
+    // now interpolate them together to make it 2D
+    //  but save it as a variable first because otherwise it does weird stuff during compilation?
+    float bilinearYX = lerp(linearLeft,linearRight,t.x);
+
+    // ==== XY and YX
+    float average = (bilinearXY + bilinearYX)/2.0;
+
+    return bilinearXY;
 }
+
+float smoothFunction(float t){
+    return ((6.0*t - 15.0)*t + 10.0)*t*t*t;
+}
+
 
 // ==================================================
 // ==================================================
@@ -39,7 +59,7 @@ int cellCountY;
 
 
 [numthreads(blockWidth,blockHeight,1)]
-void LinearPerlin (uint3 id : SV_DispatchThreadID)
+void SmoothPerlin (uint3 id : SV_DispatchThreadID)
 {
     // TODO : have something to check if we're outside the output dimensions
     // convert to floats, we dont like doing that mid equation?
@@ -112,16 +132,19 @@ void LinearPerlin (uint3 id : SV_DispatchThreadID)
 
     // ======= interpolate our 4 values ====
 
-    float dotsInterpolated = bilinearInterpolation(dotProduct_bottomLeft, dotProduct_bottomRight, dotProduct_topLeft, dotProduct_topRight, cellUV);
+    float2 smoothCellUV = float2(smoothFunction(cellUV.x),smoothFunction(cellUV.y));
+
+    float dotsInterpolated = bilinearInterpolation(dotProduct_bottomLeft, dotProduct_bottomRight, dotProduct_topLeft, dotProduct_topRight, smoothCellUV);
 
     // ======= move back to [0.0,1.0] range ====
 
-    // float resultingNoise = (dotsInterpolated + 1.0)/2.0;
+    float resultingNoise = (dotsInterpolated + 1.0)/2.0;
 
     // debugging the output
     // float4 outputColour = float4(abs(min(dotsInterpolated,0.0)), max(dotsInterpolated,0.0), 0.0, 1.0);
 
 
+    // float4 outputColour = float4(resultingNoise,resultingNoise,resultingNoise,1.0);
     // just take it as it is
     float4 outputColour = float4(dotsInterpolated,dotsInterpolated,dotsInterpolated,1.0);
     
