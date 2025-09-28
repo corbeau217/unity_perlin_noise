@@ -1046,7 +1046,7 @@ MonoBehaviour:
   safeToPerform: 0
   inputNoiseManager: {fileID: 11614625}
   previewImage: {fileID: 1706776298}
-  gridCellCount: {x: 5, y: 5}
+  gridCellCount: {x: 10, y: 10}
   inputNoiseTexture: {fileID: 0}
   inputDimensions: {x: 0, y: 0}
 --- !u!1 &595121547

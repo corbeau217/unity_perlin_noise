@@ -73,12 +73,13 @@ void LinearPerlin (uint3 id : SV_DispatchThreadID)
     float4 cellVector_topLeft_colour     = InputNoiseImage[cellVector_topLeft_pixel.xy];
     float4 cellVector_topRight_colour    = InputNoiseImage[cellVector_topRight_pixel.xy];
 
+    float piValue = 3.141593;
+    // move to the range of [-PI,PI]
+    float gradient_bottomLeft  = cellVector_bottomLeft_colour.x * piValue * 2.0;
+    float gradient_bottomRight = cellVector_bottomRight_colour.x * piValue * 2.0;
+    float gradient_topLeft     = cellVector_topLeft_colour.x * piValue * 2.0;
+    float gradient_topRight    = cellVector_topRight_colour.x * piValue * 2.0;
 
-    // move to the range of [-1.0,1.0]
-    float gradient_bottomLeft  = (cellVector_bottomLeft_colour.x*2.0)-1.0;
-    float gradient_bottomRight = (cellVector_bottomRight_colour.x*2.0)-1.0;
-    float gradient_topLeft     = (cellVector_topLeft_colour.x*2.0)-1.0;
-    float gradient_topRight    = (cellVector_topRight_colour.x*2.0)-1.0;
 
     // turn them in to vectors using trig (lazy)
     float2 cellVector_bottomLeft  = float2( cos(gradient_bottomLeft),   sin(gradient_bottomLeft)   );
@@ -105,10 +106,10 @@ void LinearPerlin (uint3 id : SV_DispatchThreadID)
     
     // dot products of difference vector to cooresponding corner vector
     //  we also multiply the UV difference by 2 because our result seems to be in the range of [-0.5,0.5] otherwise
-    float dotProduct_bottomLeft  = dot( (cornerUVDifference_bottomLeft), cellVector_bottomLeft );
-    float dotProduct_bottomRight = dot( (cornerUVDifference_bottomRight), cellVector_bottomRight );
-    float dotProduct_topLeft     = dot( (cornerUVDifference_topLeft), cellVector_topLeft );
-    float dotProduct_topRight    = dot( (cornerUVDifference_topRight), cellVector_topRight );
+    float dotProduct_bottomLeft  = dot( cornerUVDifference_bottomLeft, cellVector_bottomLeft );
+    float dotProduct_bottomRight = dot( cornerUVDifference_bottomRight, cellVector_bottomRight );
+    float dotProduct_topLeft     = dot( cornerUVDifference_topLeft, cellVector_topLeft );
+    float dotProduct_topRight    = dot( cornerUVDifference_topRight, cellVector_topRight );
 
     // ======= interpolate our 4 values ====
 
