@@ -64,12 +64,11 @@ int noiseTextureWidth;
 int noiseTextureHeight;
 
 // cells which we have vectors at the corners
-float2 cellCounts;
+float2 cellCounts1;
 
-// // TODO : have this given by the shadermanager
-// // we use this as a transformation matrix to quickly modify the
-// // uv coordinated of our octave noise input
-// float3x3[] octaveUVSpace;
+// we use this as a transformation matrix to quickly modify the
+// uv coordinated of our octave noise input
+float4x4 octaveUVMatrix1;
 
 
 
@@ -83,24 +82,27 @@ void PerlinNoiseWithOctaves (uint3 id : SV_DispatchThreadID)
     float2 outputResolution = float2( textureWidth, textureHeight);
 
     // find where we are in the noise texture space
-    float2 uvCoords = float2( (texelLocation.x / outputResolution.x), (texelLocation.y / outputResolution.y) );
+    float4 uvCoords = float4( (texelLocation.x / outputResolution.x), (texelLocation.y / outputResolution.y), 0.0, 1.0 );
+
+    // try using our new style of figuring it out
+    float4 gridPositionFraction1 = mul(octaveUVMatrix1,uvCoords);
 
     // make sure that we're within the grid
     //  modulo is incase we were given some weird location
-    float2 gridPositionFraction = float2(uvCoords.x%1.0*cellCounts.x, uvCoords.y%1.0*cellCounts.y );
+    // float2 gridPositionFraction = float2(uvCoords.x%1.0*cellCounts1.x, uvCoords.y%1.0*cellCounts1.y );
 
     // now find the cell locations
     // the ends should still continue all the way up to 0.999999999999 and then go back to 0.0 anyway
-    float2 cellUV = float2( gridPositionFraction.x%1.0, gridPositionFraction.y%1.0 );
+    float2 cellUV = float2( gridPositionFraction1.x%1.0, gridPositionFraction1.y%1.0 );
 
     // ======= get the corner vectors =======
 
     // prepare each of the cell corner's pixel location in our input noise
     //  these are where the vectors are
-    uint2 cellVector_bottomLeft_pixel  = uint2( floor(gridPositionFraction.x  )%noiseTextureWidth, floor(gridPositionFraction.y  )%noiseTextureHeight );
-    uint2 cellVector_bottomRight_pixel = uint2( floor(gridPositionFraction.x+1)%noiseTextureWidth, floor(gridPositionFraction.y  )%noiseTextureHeight );
-    uint2 cellVector_topLeft_pixel     = uint2( floor(gridPositionFraction.x  )%noiseTextureWidth, floor(gridPositionFraction.y+1)%noiseTextureHeight );
-    uint2 cellVector_topRight_pixel    = uint2( floor(gridPositionFraction.x+1)%noiseTextureWidth, floor(gridPositionFraction.y+1)%noiseTextureHeight );
+    uint2 cellVector_bottomLeft_pixel  = uint2( floor(gridPositionFraction1.x  )%noiseTextureWidth, floor(gridPositionFraction1.y  )%noiseTextureHeight );
+    uint2 cellVector_bottomRight_pixel = uint2( floor(gridPositionFraction1.x+1)%noiseTextureWidth, floor(gridPositionFraction1.y  )%noiseTextureHeight );
+    uint2 cellVector_topLeft_pixel     = uint2( floor(gridPositionFraction1.x  )%noiseTextureWidth, floor(gridPositionFraction1.y+1)%noiseTextureHeight );
+    uint2 cellVector_topRight_pixel    = uint2( floor(gridPositionFraction1.x+1)%noiseTextureWidth, floor(gridPositionFraction1.y+1)%noiseTextureHeight );
 
     // get the raw colours
     float4 cellVector_bottomLeft_colour  = InputNoiseImage[cellVector_bottomLeft_pixel.xy];
