@@ -39,6 +39,17 @@ float smoothFunction(float t){
     return ((6.0*t - 15.0)*t + 10.0)*t*t*t;
 }
 
+float2 inputNoiseAsVector(float4 inputNoiseColour){
+    // rounded to 6 decimal places because otherwise it doesnt compile
+    float piValue = 3.141593;
+    // location we are on the circle in radians from 0 to 2*pi
+    float noiseRadians = inputNoiseColour.x * piValue * 2.0;
+
+    // turn them in to vectors using trig (lazy)
+    float2 resultVector = float2( cos(noiseRadians), sin(noiseRadians) );
+
+    return resultVector;
+}
 
 // ==================================================
 // ==================================================
@@ -53,8 +64,13 @@ int noiseTextureWidth;
 int noiseTextureHeight;
 
 // cells which we have vectors at the corners
-int cellCountX;
-int cellCountY;
+float2 cellCounts;
+
+// // TODO : have this given by the shadermanager
+// // we use this as a transformation matrix to quickly modify the
+// // uv coordinated of our octave noise input
+// float3x3[] octaveUVSpace;
+
 
 
 
@@ -65,14 +81,13 @@ void PerlinNoiseWithOctaves (uint3 id : SV_DispatchThreadID)
     // convert to floats, we dont like doing that mid equation?
     float2 texelLocation = float2( id.x, id.y);
     float2 outputResolution = float2( textureWidth, textureHeight);
-    float2 cellCount = float2( cellCountX, cellCountY );
 
     // find where we are in the noise texture space
     float2 uvCoords = float2( (texelLocation.x / outputResolution.x), (texelLocation.y / outputResolution.y) );
 
     // make sure that we're within the grid
     //  modulo is incase we were given some weird location
-    float2 gridPositionFraction = float2(uvCoords.x%1.0*cellCount.x, uvCoords.y%1.0*cellCount.y );
+    float2 gridPositionFraction = float2(uvCoords.x%1.0*cellCounts.x, uvCoords.y%1.0*cellCounts.y );
 
     // now find the cell locations
     // the ends should still continue all the way up to 0.999999999999 and then go back to 0.0 anyway
@@ -93,18 +108,13 @@ void PerlinNoiseWithOctaves (uint3 id : SV_DispatchThreadID)
     float4 cellVector_topLeft_colour     = InputNoiseImage[cellVector_topLeft_pixel.xy];
     float4 cellVector_topRight_colour    = InputNoiseImage[cellVector_topRight_pixel.xy];
 
-    float piValue = 3.141593;
-    // move to the range of [-PI,PI]
-    float gradient_bottomLeft  = cellVector_bottomLeft_colour.x * piValue * 2.0;
-    float gradient_bottomRight = cellVector_bottomRight_colour.x * piValue * 2.0;
-    float gradient_topLeft     = cellVector_topLeft_colour.x * piValue * 2.0;
-    float gradient_topRight    = cellVector_topRight_colour.x * piValue * 2.0;
+
 
     // turn them in to vectors using trig (lazy)
-    float2 cellVector_bottomLeft  = float2( cos(gradient_bottomLeft),   sin(gradient_bottomLeft)   );
-    float2 cellVector_bottomRight = float2( cos(gradient_bottomRight),  sin(gradient_bottomRight)  );
-    float2 cellVector_topLeft     = float2( cos(gradient_topLeft),      sin(gradient_topLeft)      );
-    float2 cellVector_topRight    = float2( cos(gradient_topRight),     sin(gradient_topRight)     );
+    float2 cellVector_bottomLeft  = inputNoiseAsVector(cellVector_bottomLeft_colour);
+    float2 cellVector_bottomRight = inputNoiseAsVector(cellVector_bottomRight_colour);
+    float2 cellVector_topLeft     = inputNoiseAsVector(cellVector_topLeft_colour);
+    float2 cellVector_topRight    = inputNoiseAsVector(cellVector_topRight_colour);
 
     // ======= get cell uv difference vectors ====
 
