@@ -1,0 +1,153 @@
+#define blockWidth 16
+#define blockHeight 16
+#define noiseregionsize 100
+
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel PerlinNoiseWithOctaves
+
+// ==================================================
+// ==================================================
+
+float bilinearInterpolation(float bottomLeft, float bottomRight, float topLeft, float topRight, float2 t){
+    // ==== X then Y ====
+
+    // 1 dimensional interpolation across X axis
+    float linearBottom = lerp(bottomLeft,bottomRight,t.x);
+    float linearTop = lerp(topLeft,topRight,t.x);
+
+    // now interpolate them together to make it 2D
+    //  but save it as a variable first because otherwise it does weird stuff during compilation?
+    float bilinearXY = lerp(linearBottom,linearTop,t.y);
+
+    // ==== Y then X ====
+
+    // 1 dimensional interpolation across Y axis
+    float linearLeft = lerp(bottomLeft,topLeft,t.y);
+    float linearRight = lerp(bottomRight,topRight,t.y);
+
+    // now interpolate them together to make it 2D
+    //  but save it as a variable first because otherwise it does weird stuff during compilation?
+    float bilinearYX = lerp(linearLeft,linearRight,t.x);
+
+    // ==== XY and YX
+    float average = (bilinearXY + bilinearYX)/2.0;
+
+    return bilinearXY;
+}
+
+float smoothFunction(float t){
+    return ((6.0*t - 15.0)*t + 10.0)*t*t*t;
+}
+
+
+// ==================================================
+// ==================================================
+
+
+RWTexture2D<float4> ResultImage;
+int textureWidth;
+int textureHeight;
+
+RWTexture2D<float4> InputNoiseImage;
+int noiseTextureWidth;
+int noiseTextureHeight;
+
+// cells which we have vectors at the corners
+int cellCountX;
+int cellCountY;
+
+
+
+[numthreads(blockWidth,blockHeight,1)]
+void PerlinNoiseWithOctaves (uint3 id : SV_DispatchThreadID)
+{
+    // TODO : have something to check if we're outside the output dimensions
+    // convert to floats, we dont like doing that mid equation?
+    float2 texelLocation = float2( id.x, id.y);
+    float2 outputResolution = float2( textureWidth, textureHeight);
+    float2 cellCount = float2( cellCountX, cellCountY );
+
+    // find where we are in the noise texture space
+    float2 uvCoords = float2( (texelLocation.x / outputResolution.x), (texelLocation.y / outputResolution.y) );
+
+    // make sure that we're within the grid
+    //  modulo is incase we were given some weird location
+    float2 gridPositionFraction = float2(uvCoords.x%1.0*cellCount.x, uvCoords.y%1.0*cellCount.y );
+
+    // now find the cell locations
+    // the ends should still continue all the way up to 0.999999999999 and then go back to 0.0 anyway
+    float2 cellUV = float2( gridPositionFraction.x%1.0, gridPositionFraction.y%1.0 );
+
+    // ======= get the corner vectors =======
+
+    // prepare each of the cell corner's pixel location in our input noise
+    //  these are where the vectors are
+    uint2 cellVector_bottomLeft_pixel  = uint2( floor(gridPositionFraction.x  )%noiseTextureWidth, floor(gridPositionFraction.y  )%noiseTextureHeight );
+    uint2 cellVector_bottomRight_pixel = uint2( floor(gridPositionFraction.x+1)%noiseTextureWidth, floor(gridPositionFraction.y  )%noiseTextureHeight );
+    uint2 cellVector_topLeft_pixel     = uint2( floor(gridPositionFraction.x  )%noiseTextureWidth, floor(gridPositionFraction.y+1)%noiseTextureHeight );
+    uint2 cellVector_topRight_pixel    = uint2( floor(gridPositionFraction.x+1)%noiseTextureWidth, floor(gridPositionFraction.y+1)%noiseTextureHeight );
+
+    // get the raw colours
+    float4 cellVector_bottomLeft_colour  = InputNoiseImage[cellVector_bottomLeft_pixel.xy];
+    float4 cellVector_bottomRight_colour = InputNoiseImage[cellVector_bottomRight_pixel.xy];
+    float4 cellVector_topLeft_colour     = InputNoiseImage[cellVector_topLeft_pixel.xy];
+    float4 cellVector_topRight_colour    = InputNoiseImage[cellVector_topRight_pixel.xy];
+
+    float piValue = 3.141593;
+    // move to the range of [-PI,PI]
+    float gradient_bottomLeft  = cellVector_bottomLeft_colour.x * piValue * 2.0;
+    float gradient_bottomRight = cellVector_bottomRight_colour.x * piValue * 2.0;
+    float gradient_topLeft     = cellVector_topLeft_colour.x * piValue * 2.0;
+    float gradient_topRight    = cellVector_topRight_colour.x * piValue * 2.0;
+
+    // turn them in to vectors using trig (lazy)
+    float2 cellVector_bottomLeft  = float2( cos(gradient_bottomLeft),   sin(gradient_bottomLeft)   );
+    float2 cellVector_bottomRight = float2( cos(gradient_bottomRight),  sin(gradient_bottomRight)  );
+    float2 cellVector_topLeft     = float2( cos(gradient_topLeft),      sin(gradient_topLeft)      );
+    float2 cellVector_topRight    = float2( cos(gradient_topRight),     sin(gradient_topRight)     );
+
+    // ======= get cell uv difference vectors ====
+
+    // get the corner vectors in "cell UV space"
+    float2 cornerUVLocation_bottomLeft  = float2( 0.0, 0.0 );
+    float2 cornerUVLocation_bottomRight = float2( 1.0, 0.0 );
+    float2 cornerUVLocation_topLeft     = float2( 0.0, 1.0 );
+    float2 cornerUVLocation_topRight    = float2( 1.0, 1.0 );
+
+    // now get the different vectors
+    //  this is the vectors from each corner to where we are in the cell
+    float2 cornerUVDifference_bottomLeft  = float2(cornerUVLocation_bottomLeft.x - cellUV.x, cornerUVLocation_bottomLeft.y - cellUV.y);
+    float2 cornerUVDifference_bottomRight = float2(cornerUVLocation_bottomRight.x - cellUV.x, cornerUVLocation_bottomRight.y - cellUV.y);
+    float2 cornerUVDifference_topLeft     = float2(cornerUVLocation_topLeft.x - cellUV.x, cornerUVLocation_topLeft.y - cellUV.y);
+    float2 cornerUVDifference_topRight    = float2(cornerUVLocation_topRight.x - cellUV.x, cornerUVLocation_topRight.y - cellUV.y);
+
+    // ======= get dot products ====
+    
+    // dot products of difference vector to cooresponding corner vector
+    //  we also multiply the UV difference by 2 because our result seems to be in the range of [-0.5,0.5] otherwise
+    float dotProduct_bottomLeft  = dot( cornerUVDifference_bottomLeft, cellVector_bottomLeft );
+    float dotProduct_bottomRight = dot( cornerUVDifference_bottomRight, cellVector_bottomRight );
+    float dotProduct_topLeft     = dot( cornerUVDifference_topLeft, cellVector_topLeft );
+    float dotProduct_topRight    = dot( cornerUVDifference_topRight, cellVector_topRight );
+
+    // ======= interpolate our 4 values ====
+
+    float2 smoothCellUV = float2(smoothFunction(cellUV.x),smoothFunction(cellUV.y));
+
+    float dotsInterpolated = bilinearInterpolation(dotProduct_bottomLeft, dotProduct_bottomRight, dotProduct_topLeft, dotProduct_topRight, smoothCellUV);
+
+    // ======= move back to [0.0,1.0] range ====
+
+    // float resultingNoise = (dotsInterpolated + 1.0)/2.0;
+
+    // debugging the output
+    // float4 outputColour = float4(abs(min(dotsInterpolated,0.0)), max(dotsInterpolated,0.0), 0.0, 1.0);
+
+
+    // just take it as it is
+    float4 outputColour = float4(dotsInterpolated,dotsInterpolated,dotsInterpolated,1.0);
+    
+
+    // save it
+    ResultImage[id.xy] = outputColour;
+}
