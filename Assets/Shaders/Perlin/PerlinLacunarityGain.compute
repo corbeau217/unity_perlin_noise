@@ -3,7 +3,7 @@
 #define noiseregionsize 100
 
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel PerlinNoiseWithOctaves
+#pragma kernel PerlinLacunarityGain
 
 // ==================================================
 // ==================================================
@@ -169,7 +169,7 @@ float octaveContribution4;
 
 
 [numthreads(blockWidth,blockHeight,1)]
-void PerlinNoiseWithOctaves (uint3 id : SV_DispatchThreadID)
+void PerlinLacunarityGain (uint3 id : SV_DispatchThreadID)
 {
     // TODO : have something to check if we're outside the output dimensions
     // convert to floats, we dont like doing that mid equation?
@@ -221,7 +221,7 @@ void PerlinNoiseWithOctaves (uint3 id : SV_DispatchThreadID)
     ResultImage[id.xy] = outputColour;
 }
 
-
+// TODO : use this stuff for it instead of the contribution nonsense
 // [Tooltip("the power to raise our frequency to")]
 // public float octaveLacunarity = 1.98;
 // [Tooltip("the power to raise our amplitude to")]
