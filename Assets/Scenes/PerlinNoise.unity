@@ -596,7 +596,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 415526122}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 561b47dc7b52545949c83508edc41775, type: 3}
+  m_Script: {fileID: 11500000, guid: 54936ef5e9ff94776a53ebf44b7c8f51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   computeShader: {fileID: 7200000, guid: 43f4ef3015804461fa0efc618fd56fca, type: 3}
@@ -612,8 +612,12 @@ MonoBehaviour:
   previewImage: {fileID: 1706776298}
   inputNoiseTexture: {fileID: 0}
   inputDimensions: {x: 0, y: 0}
+  cellCountInitial: {x: 3, y: 3}
+  amplitudeInitial: 1
+  octaveLacunarity: 2
+  octaveGain: 0.5
   gridCellNoiseOrigin1: {x: 0, y: 0}
-  gridCellCount1: {x: 3, y: 3}
+  gridCellCount1: {x: 4, y: 4}
   gridCellUVMatrix1:
     e00: 1
     e01: 0
@@ -633,7 +637,7 @@ MonoBehaviour:
     e33: 1
   octaveContribution1: 1
   gridCellNoiseOrigin2: {x: 0, y: 0}
-  gridCellCount2: {x: 6, y: 6}
+  gridCellCount2: {x: 8, y: 8}
   gridCellUVMatrix2:
     e00: 1
     e01: 0
@@ -651,9 +655,9 @@ MonoBehaviour:
     e31: 0
     e32: 0
     e33: 1
-  octaveContribution2: 1
+  octaveContribution2: 0.5
   gridCellNoiseOrigin3: {x: 0, y: 0}
-  gridCellCount3: {x: 12, y: 12}
+  gridCellCount3: {x: 16, y: 16}
   gridCellUVMatrix3:
     e00: 1
     e01: 0
@@ -671,9 +675,9 @@ MonoBehaviour:
     e31: 0
     e32: 0
     e33: 1
-  octaveContribution3: 1
+  octaveContribution3: 0.25
   gridCellNoiseOrigin4: {x: 0, y: 0}
-  gridCellCount4: {x: 24, y: 24}
+  gridCellCount4: {x: 16, y: 16}
   gridCellUVMatrix4:
     e00: 1
     e01: 0
@@ -691,7 +695,7 @@ MonoBehaviour:
     e31: 0
     e32: 0
     e33: 1
-  octaveContribution4: 1
+  octaveContribution4: 0.125
 --- !u!1 &450919933
 GameObject:
   m_ObjectHideFlags: 0

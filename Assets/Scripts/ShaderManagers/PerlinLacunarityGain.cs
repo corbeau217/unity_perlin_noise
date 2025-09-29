@@ -16,6 +16,13 @@ public class PerlinLacunarityGain : ShaderManager
     [Tooltip("this is retreived by the shader manager at runtime")]
     public Vector2Int inputDimensions;
     [Space(30)]
+    public Vector2Int cellCountInitial = Vector2Int.one * 4;
+    public float amplitudeInitial = 1.0f;
+    [Tooltip("the power to raise our frequency to")]
+    public float octaveLacunarity = 1.98f;
+    [Tooltip("the power to raise our amplitude to")]
+    public float octaveGain = 0.51f;
+    [Space(15)]
     public Vector2Int gridCellNoiseOrigin1 = Vector2Int.zero;
     public Vector2Int gridCellCount1 = Vector2Int.one * 4;
     public Matrix4x4 gridCellUVMatrix1 = Matrix4x4.identity;
@@ -48,12 +55,15 @@ public class PerlinLacunarityGain : ShaderManager
         computeShader.SetInt("noiseTextureWidth", inputDimensions.x);
         computeShader.SetInt("noiseTextureHeight", inputDimensions.y);
 
+        UpdateCellCounts();
         UpdateUVMatrices();
 
         float[] cellCountsArray1 = gridCellCount1.ToFloatArray();
         float[] cellCountsArray2 = gridCellCount2.ToFloatArray();
         float[] cellCountsArray3 = gridCellCount3.ToFloatArray();
         float[] cellCountsArray4 = gridCellCount4.ToFloatArray();
+
+        float[] cellCountInitialArray = cellCountInitial.ToFloatArray();
         
         computeShader.SetMatrix("octaveUVMatrix1", gridCellUVMatrix1);
         computeShader.SetMatrix("octaveUVMatrix2", gridCellUVMatrix2);
@@ -63,14 +73,19 @@ public class PerlinLacunarityGain : ShaderManager
         computeShader.SetFloats("cellCounts1", cellCountsArray1);
         computeShader.SetFloats("cellCounts2", cellCountsArray2);
         computeShader.SetFloats("cellCounts3", cellCountsArray3);
-        computeShader.SetFloats("cellCounts3", cellCountsArray3);
         computeShader.SetFloats("cellCounts4", cellCountsArray4);
 
         computeShader.SetFloat("octaveContribution1", octaveContribution1);
         computeShader.SetFloat("octaveContribution2", octaveContribution2);
         computeShader.SetFloat("octaveContribution3", octaveContribution3);
-        computeShader.SetFloat("octaveContribution3", octaveContribution3);
         computeShader.SetFloat("octaveContribution4", octaveContribution4);
+
+
+        computeShader.SetFloats("cellCountInitial", cellCountInitialArray);
+        computeShader.SetFloat("amplitudeInitial", amplitudeInitial);
+
+        computeShader.SetFloat("octaveLacunarity", octaveLacunarity);
+        computeShader.SetFloat("octaveGain", octaveGain);
 
     }
     public override void UpdatePreview(){
@@ -85,7 +100,31 @@ public class PerlinLacunarityGain : ShaderManager
             safeToPerform = true;
         }
     }
+    public void UpdateCellCounts(){
+        int frequency = 1;
+        float amplitude = amplitudeInitial;
+        
 
+        gridCellCount1 = cellCountInitial;
+        octaveContribution1 = amplitude;
+        frequency = (int)(frequency*octaveLacunarity);
+        amplitude *= octaveGain;
+        
+        gridCellCount2 = cellCountInitial * frequency;
+        octaveContribution2 = amplitude;
+        frequency = (int)(frequency*octaveLacunarity);
+        amplitude *= octaveGain;
+        
+        gridCellCount3 = cellCountInitial * frequency;
+        octaveContribution3 = amplitude;
+        frequency = (int)(frequency*octaveLacunarity);
+        amplitude *= octaveGain;
+        
+        gridCellCount4 = cellCountInitial * frequency;
+        octaveContribution4 = amplitude;
+        // frequency = (int)(frequency*octaveLacunarity);
+        // amplitude *= octaveGain;
+    }
     public void UpdateUVMatrices(){
         // use our helper function in Util.cs
         //  to just make it a little tidier

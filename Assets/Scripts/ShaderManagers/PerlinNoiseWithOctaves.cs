@@ -63,12 +63,10 @@ public class PerlinNoiseWithOctaves : ShaderManager
         computeShader.SetFloats("cellCounts1", cellCountsArray1);
         computeShader.SetFloats("cellCounts2", cellCountsArray2);
         computeShader.SetFloats("cellCounts3", cellCountsArray3);
-        computeShader.SetFloats("cellCounts3", cellCountsArray3);
         computeShader.SetFloats("cellCounts4", cellCountsArray4);
 
         computeShader.SetFloat("octaveContribution1", octaveContribution1);
         computeShader.SetFloat("octaveContribution2", octaveContribution2);
-        computeShader.SetFloat("octaveContribution3", octaveContribution3);
         computeShader.SetFloat("octaveContribution3", octaveContribution3);
         computeShader.SetFloat("octaveContribution4", octaveContribution4);
 

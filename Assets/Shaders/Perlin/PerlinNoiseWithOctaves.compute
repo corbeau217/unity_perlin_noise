@@ -220,15 +220,3 @@ void PerlinNoiseWithOctaves (uint3 id : SV_DispatchThreadID)
     // save it
     ResultImage[id.xy] = outputColour;
 }
-
-
-// [Tooltip("the power to raise our frequency to")]
-// public float octaveLacunarity = 1.98;
-// [Tooltip("the power to raise our amplitude to")]
-// public float octaveGain = 0.51;
-// // TODO fix this to use amplitude/frequency
-// float octaveLacunarity;
-// float octaveGain;
-//     computeShader.SetFloat("octaveContribution1", octaveLacunarity);
-//     computeShader.SetFloat("octaveContribution2", octaveGain);
-// [Space(15)]
