@@ -26,7 +26,8 @@ public class ShaderManager : MonoBehaviour
     [Space(10)]
     public bool performedCompute = false;
     public bool showingOnPreview = false;
-    public bool safeToPerform = true;
+    [Tooltip("set this to true in most cases unless you want the shader to wait on something before performing its compute shader")]
+    public bool safeToPerform = false;
     
     void Start(){
         OverrideShaderKernelName();
