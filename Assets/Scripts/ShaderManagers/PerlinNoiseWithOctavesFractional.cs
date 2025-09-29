@@ -16,28 +16,28 @@ public class PerlinNoiseWithOctavesFractional : ShaderManager
     [Tooltip("this is retreived by the shader manager at runtime")]
     public Vector2Int inputDimensions;
     [Space(30)]
-    public Vector2Int gridCellNoiseOrigin1 = Vector2Int.zero;
-    public Vector2Int gridCellCount1 = Vector2Int.one * 4;
+    public Vector2 gridCellNoiseOrigin1 = Vector2.zero;
+    public Vector2 gridCellCount1 = Vector2.one * 4;
     public Matrix4x4 gridCellUVMatrix1 = Matrix4x4.identity;
     public float octaveContribution1 = 1.0f;
     [Space(15)]
-    public Vector2Int gridCellNoiseOrigin2 = Vector2Int.zero;
-    public Vector2Int gridCellCount2 = Vector2Int.one * 8;
+    public Vector2 gridCellNoiseOrigin2 = Vector2.zero;
+    public Vector2 gridCellCount2 = Vector2.one * 8;
     public Matrix4x4 gridCellUVMatrix2 = Matrix4x4.identity;
     public float octaveContribution2 = 0.5f;
     [Space(15)]
-    public Vector2Int gridCellNoiseOrigin3 = Vector2Int.zero;
-    public Vector2Int gridCellCount3 = Vector2Int.one * 16;
+    public Vector2 gridCellNoiseOrigin3 = Vector2.zero;
+    public Vector2 gridCellCount3 = Vector2.one * 16;
     public Matrix4x4 gridCellUVMatrix3 = Matrix4x4.identity;
     public float octaveContribution3 = 0.25f;
     [Space(15)]
-    public Vector2Int gridCellNoiseOrigin4 = Vector2Int.zero;
-    public Vector2Int gridCellCount4 = Vector2Int.one * 16;
+    public Vector2 gridCellNoiseOrigin4 = Vector2.zero;
+    public Vector2 gridCellCount4 = Vector2.one * 16;
     public Matrix4x4 gridCellUVMatrix4 = Matrix4x4.identity;
     public float octaveContribution4 = 0.125f;
     [Space(15)]
-    public Vector2Int gridCellNoiseOrigin5 = Vector2Int.zero;
-    public Vector2Int gridCellCount5 = Vector2Int.one * 32;
+    public Vector2 gridCellNoiseOrigin5 = Vector2.zero;
+    public Vector2 gridCellCount5 = Vector2.one * 32;
     public Matrix4x4 gridCellUVMatrix5 = Matrix4x4.identity;
     public float octaveContribution5 = 0.0625f;
 
@@ -58,11 +58,11 @@ public class PerlinNoiseWithOctavesFractional : ShaderManager
 
         UpdateUVMatrices();
 
-        float[] cellCountsArray1 = gridCellCount1.ToFloatArray();
-        float[] cellCountsArray2 = gridCellCount2.ToFloatArray();
-        float[] cellCountsArray3 = gridCellCount3.ToFloatArray();
-        float[] cellCountsArray4 = gridCellCount4.ToFloatArray();
-        float[] cellCountsArray5 = gridCellCount5.ToFloatArray();
+        float[] cellCountsArray1 = gridCellCount1.ToArray();
+        float[] cellCountsArray2 = gridCellCount2.ToArray();
+        float[] cellCountsArray3 = gridCellCount3.ToArray();
+        float[] cellCountsArray4 = gridCellCount4.ToArray();
+        float[] cellCountsArray5 = gridCellCount5.ToArray();
         
         computeShader.SetMatrix("octaveUVMatrix1", gridCellUVMatrix1);
         computeShader.SetMatrix("octaveUVMatrix2", gridCellUVMatrix2);
@@ -99,10 +99,10 @@ public class PerlinNoiseWithOctavesFractional : ShaderManager
     public void UpdateUVMatrices(){
         // use our helper function in Util.cs
         //  to just make it a little tidier
-        gridCellUVMatrix1 = gridCellUVMatrix1.UpdateTranslationScale2DInt( gridCellNoiseOrigin1, gridCellCount1 );
-        gridCellUVMatrix2 = gridCellUVMatrix2.UpdateTranslationScale2DInt( gridCellNoiseOrigin2, gridCellCount2 );
-        gridCellUVMatrix3 = gridCellUVMatrix3.UpdateTranslationScale2DInt( gridCellNoiseOrigin3, gridCellCount3 );
-        gridCellUVMatrix4 = gridCellUVMatrix4.UpdateTranslationScale2DInt( gridCellNoiseOrigin4, gridCellCount4 );
-        gridCellUVMatrix5 = gridCellUVMatrix5.UpdateTranslationScale2DInt( gridCellNoiseOrigin5, gridCellCount5 );
+        gridCellUVMatrix1 = gridCellUVMatrix1.UpdateTranslationScale2D( gridCellNoiseOrigin1, gridCellCount1 );
+        gridCellUVMatrix2 = gridCellUVMatrix2.UpdateTranslationScale2D( gridCellNoiseOrigin2, gridCellCount2 );
+        gridCellUVMatrix3 = gridCellUVMatrix3.UpdateTranslationScale2D( gridCellNoiseOrigin3, gridCellCount3 );
+        gridCellUVMatrix4 = gridCellUVMatrix4.UpdateTranslationScale2D( gridCellNoiseOrigin4, gridCellCount4 );
+        gridCellUVMatrix5 = gridCellUVMatrix5.UpdateTranslationScale2D( gridCellNoiseOrigin5, gridCellCount5 );
     }
 }
