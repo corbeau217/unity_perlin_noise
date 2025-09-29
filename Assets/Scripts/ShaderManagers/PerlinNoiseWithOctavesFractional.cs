@@ -16,6 +16,11 @@ public class PerlinNoiseWithOctavesFractional : ShaderManager
     [Tooltip("this is retreived by the shader manager at runtime")]
     public Vector2Int inputDimensions;
     [Space(30)]
+    [Tooltip("normalising operation on our result values, as in, divide by the sum of all contribution (amplitude) factors")]
+    public bool divideByTotalContribution = false;
+    [Tooltip("attempt to move from [-1.0,1.0] to [0.0,1.0]")]
+    public bool uncenterNoiseValues = false;
+    [Space(15)]
     public Vector2 gridCellNoiseOrigin1 = Vector2.zero;
     public Vector2 gridCellCount1 = Vector2.one * 4;
     public Matrix4x4 gridCellUVMatrix1 = Matrix4x4.identity;
@@ -40,6 +45,7 @@ public class PerlinNoiseWithOctavesFractional : ShaderManager
     public Vector2 gridCellCount5 = Vector2.one * 32;
     public Matrix4x4 gridCellUVMatrix5 = Matrix4x4.identity;
     public float octaveContribution5 = 0.0625f;
+
 
     public override void OverrideShaderKernelName(){
         computeShaderKernel = "PerlinNoiseWithOctavesFractional";
@@ -81,6 +87,9 @@ public class PerlinNoiseWithOctavesFractional : ShaderManager
         computeShader.SetFloat("octaveContribution3", octaveContribution3);
         computeShader.SetFloat("octaveContribution4", octaveContribution4);
         computeShader.SetFloat("octaveContribution5", octaveContribution5);
+
+        computeShader.SetInt("divideByTotalContribution", ((divideByTotalContribution)?trueIntValue:falseIntValue));
+        computeShader.SetInt("uncenterNoiseValues", ((uncenterNoiseValues)?trueIntValue:falseIntValue));
 
     }
     public override void UpdatePreview(){

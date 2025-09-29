@@ -5,6 +5,16 @@ using UnityEngine.UI;
 
 public class ShaderManager : MonoBehaviour
 {
+
+    // =============================
+    // ===== helper values
+
+    // used for giving shaders a reference and value to use in boolean operations
+    public static int trueIntValue = 1;
+    public static int falseIntValue = 0;
+
+    // =============================
+
     public ComputeShader computeShader;
     public Vector3Int blockSize = new Vector3Int(16,16,1);
     public string computeShaderKernel = "WhiteNoise1";

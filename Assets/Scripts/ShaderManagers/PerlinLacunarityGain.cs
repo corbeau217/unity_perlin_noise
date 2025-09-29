@@ -16,32 +16,42 @@ public class PerlinLacunarityGain : ShaderManager
     [Tooltip("this is retreived by the shader manager at runtime")]
     public Vector2Int inputDimensions;
     [Space(30)]
-    public Vector2Int cellCountInitial = Vector2Int.one * 4;
+    public Vector2 cellCountInitial = Vector2.one * 4;
     public float amplitudeInitial = 1.0f;
     [Tooltip("the power to raise our frequency to")]
     public float octaveLacunarity = 1.98f;
     [Tooltip("the power to raise our amplitude to")]
     public float octaveGain = 0.51f;
     [Space(15)]
-    public Vector2Int gridCellNoiseOrigin1 = Vector2Int.zero;
-    public Vector2Int gridCellCount1 = Vector2Int.one * 4;
+    [Tooltip("normalising operation on our result values, as in, divide by the sum of all contribution (amplitude) factors")]
+    public bool divideByTotalContribution = false;
+    [Tooltip("attempt to move from [-1.0,1.0] to [0.0,1.0]")]
+    public bool uncenterNoiseValues = false;
+    [Space(15)]
+    public Vector2 gridCellNoiseOrigin1 = Vector2.zero;
+    public Vector2 gridCellCount1 = Vector2.one * 4;
     public Matrix4x4 gridCellUVMatrix1 = Matrix4x4.identity;
     public float octaveContribution1 = 1.0f;
     [Space(15)]
-    public Vector2Int gridCellNoiseOrigin2 = Vector2Int.zero;
-    public Vector2Int gridCellCount2 = Vector2Int.one * 8;
+    public Vector2 gridCellNoiseOrigin2 = Vector2.zero;
+    public Vector2 gridCellCount2 = Vector2.one * 8;
     public Matrix4x4 gridCellUVMatrix2 = Matrix4x4.identity;
     public float octaveContribution2 = 0.5f;
     [Space(15)]
-    public Vector2Int gridCellNoiseOrigin3 = Vector2Int.zero;
-    public Vector2Int gridCellCount3 = Vector2Int.one * 16;
+    public Vector2 gridCellNoiseOrigin3 = Vector2.zero;
+    public Vector2 gridCellCount3 = Vector2.one * 16;
     public Matrix4x4 gridCellUVMatrix3 = Matrix4x4.identity;
     public float octaveContribution3 = 0.25f;
     [Space(15)]
-    public Vector2Int gridCellNoiseOrigin4 = Vector2Int.zero;
-    public Vector2Int gridCellCount4 = Vector2Int.one * 16;
+    public Vector2 gridCellNoiseOrigin4 = Vector2.zero;
+    public Vector2 gridCellCount4 = Vector2.one * 16;
     public Matrix4x4 gridCellUVMatrix4 = Matrix4x4.identity;
     public float octaveContribution4 = 0.125f;
+    [Space(15)]
+    public Vector2 gridCellNoiseOrigin5 = Vector2.zero;
+    public Vector2 gridCellCount5 = Vector2.one * 32;
+    public Matrix4x4 gridCellUVMatrix5 = Matrix4x4.identity;
+    public float octaveContribution5 = 0.0625f;
 
     public override void SettingOverrides(){
         safeToPerform = false;
@@ -58,34 +68,40 @@ public class PerlinLacunarityGain : ShaderManager
         UpdateCellCounts();
         UpdateUVMatrices();
 
-        float[] cellCountsArray1 = gridCellCount1.ToFloatArray();
-        float[] cellCountsArray2 = gridCellCount2.ToFloatArray();
-        float[] cellCountsArray3 = gridCellCount3.ToFloatArray();
-        float[] cellCountsArray4 = gridCellCount4.ToFloatArray();
-
-        float[] cellCountInitialArray = cellCountInitial.ToFloatArray();
+        float[] cellCountsArray1 = gridCellCount1.ToArray();
+        float[] cellCountsArray2 = gridCellCount2.ToArray();
+        float[] cellCountsArray3 = gridCellCount3.ToArray();
+        float[] cellCountsArray4 = gridCellCount4.ToArray();
+        float[] cellCountsArray5 = gridCellCount5.ToArray();
         
         computeShader.SetMatrix("octaveUVMatrix1", gridCellUVMatrix1);
         computeShader.SetMatrix("octaveUVMatrix2", gridCellUVMatrix2);
         computeShader.SetMatrix("octaveUVMatrix3", gridCellUVMatrix3);
         computeShader.SetMatrix("octaveUVMatrix4", gridCellUVMatrix4);
+        computeShader.SetMatrix("octaveUVMatrix5", gridCellUVMatrix5);
 
         computeShader.SetFloats("cellCounts1", cellCountsArray1);
         computeShader.SetFloats("cellCounts2", cellCountsArray2);
         computeShader.SetFloats("cellCounts3", cellCountsArray3);
         computeShader.SetFloats("cellCounts4", cellCountsArray4);
+        computeShader.SetFloats("cellCounts5", cellCountsArray5);
 
         computeShader.SetFloat("octaveContribution1", octaveContribution1);
         computeShader.SetFloat("octaveContribution2", octaveContribution2);
         computeShader.SetFloat("octaveContribution3", octaveContribution3);
         computeShader.SetFloat("octaveContribution4", octaveContribution4);
+        computeShader.SetFloat("octaveContribution5", octaveContribution5);
 
+        float[] cellCountInitialArray = cellCountInitial.ToArray();
 
         computeShader.SetFloats("cellCountInitial", cellCountInitialArray);
         computeShader.SetFloat("amplitudeInitial", amplitudeInitial);
 
         computeShader.SetFloat("octaveLacunarity", octaveLacunarity);
         computeShader.SetFloat("octaveGain", octaveGain);
+
+        computeShader.SetInt("divideByTotalContribution", ((divideByTotalContribution)?trueIntValue:falseIntValue));
+        computeShader.SetInt("uncenterNoiseValues", ((uncenterNoiseValues)?trueIntValue:falseIntValue));
 
     }
     public override void UpdatePreview(){
@@ -101,36 +117,42 @@ public class PerlinLacunarityGain : ShaderManager
         }
     }
     public void UpdateCellCounts(){
-        int frequency = 1;
+        float frequency = 1;
         float amplitude = amplitudeInitial;
         
 
         gridCellCount1 = cellCountInitial;
         octaveContribution1 = amplitude;
-        frequency = (int)(frequency*octaveLacunarity);
+        frequency *= octaveLacunarity;
         amplitude *= octaveGain;
         
         gridCellCount2 = cellCountInitial * frequency;
         octaveContribution2 = amplitude;
-        frequency = (int)(frequency*octaveLacunarity);
+        frequency *= octaveLacunarity;
         amplitude *= octaveGain;
         
         gridCellCount3 = cellCountInitial * frequency;
         octaveContribution3 = amplitude;
-        frequency = (int)(frequency*octaveLacunarity);
+        frequency *= octaveLacunarity;
         amplitude *= octaveGain;
         
         gridCellCount4 = cellCountInitial * frequency;
         octaveContribution4 = amplitude;
-        // frequency = (int)(frequency*octaveLacunarity);
+        frequency *= octaveLacunarity;
+        amplitude *= octaveGain;
+        
+        gridCellCount5 = cellCountInitial * frequency;
+        octaveContribution5 = amplitude;
+        // frequency *= octaveLacunarity;
         // amplitude *= octaveGain;
     }
     public void UpdateUVMatrices(){
         // use our helper function in Util.cs
         //  to just make it a little tidier
-        gridCellUVMatrix1 = gridCellUVMatrix1.UpdateTranslationScale2DInt( gridCellNoiseOrigin1, gridCellCount1 );
-        gridCellUVMatrix2 = gridCellUVMatrix2.UpdateTranslationScale2DInt( gridCellNoiseOrigin2, gridCellCount2 );
-        gridCellUVMatrix3 = gridCellUVMatrix3.UpdateTranslationScale2DInt( gridCellNoiseOrigin3, gridCellCount3 );
-        gridCellUVMatrix4 = gridCellUVMatrix4.UpdateTranslationScale2DInt( gridCellNoiseOrigin4, gridCellCount4 );
+        gridCellUVMatrix1 = gridCellUVMatrix1.UpdateTranslationScale2D( gridCellNoiseOrigin1, gridCellCount1 );
+        gridCellUVMatrix2 = gridCellUVMatrix2.UpdateTranslationScale2D( gridCellNoiseOrigin2, gridCellCount2 );
+        gridCellUVMatrix3 = gridCellUVMatrix3.UpdateTranslationScale2D( gridCellNoiseOrigin3, gridCellCount3 );
+        gridCellUVMatrix4 = gridCellUVMatrix4.UpdateTranslationScale2D( gridCellNoiseOrigin4, gridCellCount4 );
+        gridCellUVMatrix5 = gridCellUVMatrix5.UpdateTranslationScale2D( gridCellNoiseOrigin5, gridCellCount5 );
     }
 }

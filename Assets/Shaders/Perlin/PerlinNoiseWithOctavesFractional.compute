@@ -168,6 +168,8 @@ float octaveContribution3;
 float octaveContribution4;
 float octaveContribution5;
 
+int divideByTotalContribution;
+int uncenterNoiseValues;
 
 
 
@@ -204,10 +206,12 @@ void PerlinNoiseWithOctavesFractional (uint3 id : SV_DispatchThreadID)
 
     // normalising it?
     float octaveRatioTotal = octaveContribution1 + octaveContribution2 + octaveContribution3 + octaveContribution4 + octaveContribution5;
-    mixedNoise /= octaveRatioTotal;
-
+    // only when it was requested, otherwise stay the same
+    mixedNoise = (divideByTotalContribution > 0)? (mixedNoise/octaveRatioTotal) : (mixedNoise); // only when it was requested
+    
     // bring to [0.0,1.0] range
-    mixedNoise = (mixedNoise+1.0)/2.0;
+    // only when it was requested, otherwise stay the same
+    mixedNoise = (uncenterNoiseValues > 0)? ( (mixedNoise+1.0)/2.0 ) : (mixedNoise);
     
 
     // red is negative
