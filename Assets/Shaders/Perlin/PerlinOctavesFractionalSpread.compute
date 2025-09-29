@@ -63,13 +63,13 @@ float2 inputNoiseAsVector(float4 inputNoiseColour){
 //      is the texture to sample our noise from
 // inputTextureDimensions
 //      is the size of the input noise texture
-float GetCornerContribution(float2 gridSpaceFraction, float2 cornerOffset, float2 cellUVCoords, RWTexture2D<float4> inputNoiseTexture, uint2 inputTextureDimensions){
+float GetCornerContribution(float2 gridSpaceFraction, float2 sampleDistance, float2 cornerOffset, float2 cellUVCoords, RWTexture2D<float4> inputNoiseTexture, uint2 inputTextureDimensions){
     // ======= get the corner vector =======
 
     // prepare the cell corner pixel location in our input noise
     //  this is where the vectors are
     //  (we include our corner offset in our pixel selecting decision)
-    uint2 cellCornerVector_pixel  = uint2( floor(gridSpaceFraction.x+cornerOffset.x)%inputTextureDimensions.x, floor(gridSpaceFraction.y+cornerOffset.y)%inputTextureDimensions.y );
+    uint2 cellCornerVector_pixel  = uint2( (floor((gridSpaceFraction.x+cornerOffset.x))*floor(sampleDistance.x))%inputTextureDimensions.x, (floor((gridSpaceFraction.y+cornerOffset.y))*floor(sampleDistance.y))%inputTextureDimensions.y );
 
     // get the raw colours
     float4 cellCornerVector_colour  = inputNoiseTexture[cellCornerVector_pixel.xy];
@@ -94,7 +94,7 @@ float GetCornerContribution(float2 gridSpaceFraction, float2 cornerOffset, float
 // this is the bulk of our noise fetching code
 //  we move this to a separate function so we dont have to repeat each of these lines in subsequent octaves
 //  outputing just the noise value at the end instead of a colour
-float GetOctaveNoise(float4x4 octaveUVTransformationMatrix, float2 octaveCellCounts, float4 fragCoords, RWTexture2D<float4> inputNoiseTexture, uint2 inputTextureDimensions){
+float GetOctaveNoise(float4x4 octaveUVTransformationMatrix, float2 octaveCellCounts, float4 fragCoords, float2 sampleDistance, RWTexture2D<float4> inputNoiseTexture, uint2 inputTextureDimensions){
     
     // using matrix math to fetch our octave's grid location using our supplied transformation matrix
     float4 octaveGridSpaceCoord = mul( octaveUVTransformationMatrix, fragCoords );
@@ -122,10 +122,10 @@ float GetOctaveNoise(float4x4 octaveUVTransformationMatrix, float2 octaveCellCou
 
     // ======= get corner contributions ====
     // use da function we made
-    float contribution1_bottomLeft  = GetCornerContribution( octaveGridSpaceCoord.xy, cornerUVLocation_bottomLeft, cellUVCoords, inputNoiseTexture, inputTextureDimensions );
-    float contribution1_bottomRight = GetCornerContribution( octaveGridSpaceCoord.xy, cornerUVLocation_bottomRight, cellUVCoords, inputNoiseTexture, inputTextureDimensions );
-    float contribution1_topLeft     = GetCornerContribution( octaveGridSpaceCoord.xy, cornerUVLocation_topLeft, cellUVCoords, inputNoiseTexture, inputTextureDimensions );
-    float contribution1_topRight    = GetCornerContribution( octaveGridSpaceCoord.xy, cornerUVLocation_topRight, cellUVCoords, inputNoiseTexture, inputTextureDimensions );
+    float contribution1_bottomLeft  = GetCornerContribution( octaveGridSpaceCoord.xy, sampleDistance, cornerUVLocation_bottomLeft, cellUVCoords, inputNoiseTexture, inputTextureDimensions );
+    float contribution1_bottomRight = GetCornerContribution( octaveGridSpaceCoord.xy, sampleDistance, cornerUVLocation_bottomRight, cellUVCoords, inputNoiseTexture, inputTextureDimensions );
+    float contribution1_topLeft     = GetCornerContribution( octaveGridSpaceCoord.xy, sampleDistance, cornerUVLocation_topLeft, cellUVCoords, inputNoiseTexture, inputTextureDimensions );
+    float contribution1_topRight    = GetCornerContribution( octaveGridSpaceCoord.xy, sampleDistance, cornerUVLocation_topRight, cellUVCoords, inputNoiseTexture, inputTextureDimensions );
 
     // ======= interpolate our 4 values ====
 
@@ -168,8 +168,13 @@ float octaveContribution3;
 float octaveContribution4;
 float octaveContribution5;
 
+// amount of distance between pixels we sample on either axis
+float2 samplePixelSpread;
+
+// booleans about different properties
 int divideByTotalContribution;
 int uncenterNoiseValues;
+int spreadSampling;
 
 
 
@@ -184,15 +189,17 @@ void PerlinOctavesFractionalSpread (uint3 id : SV_DispatchThreadID)
     // to make sure we're retreiving our data correctly
     uint2 inputTextureDimensions = uint2( noiseTextureWidth, noiseTextureHeight );
 
+    // when we requested to spread out the sampling, otherwise leave it as the next pixel
+    float2 sampleDistanceAmplifier = ((spreadSampling>0)? samplePixelSpread : float2(1.0,1.0));
     // find where we are in the output texture's uv space
     float4 fragmentCoords = float4( (texelLocation.x / outputResolution.x), (texelLocation.y / outputResolution.y), 0.0, 1.0 );
 
     // request the noise for that octave
-    float octaveNoise1 = GetOctaveNoise( octaveUVMatrix1, cellCounts1, fragmentCoords, InputNoiseImage, inputTextureDimensions);
-    float octaveNoise2 = GetOctaveNoise( octaveUVMatrix2, cellCounts2, fragmentCoords, InputNoiseImage, inputTextureDimensions);
-    float octaveNoise3 = GetOctaveNoise( octaveUVMatrix3, cellCounts3, fragmentCoords, InputNoiseImage, inputTextureDimensions);
-    float octaveNoise4 = GetOctaveNoise( octaveUVMatrix4, cellCounts4, fragmentCoords, InputNoiseImage, inputTextureDimensions);
-    float octaveNoise5 = GetOctaveNoise( octaveUVMatrix5, cellCounts5, fragmentCoords, InputNoiseImage, inputTextureDimensions);
+    float octaveNoise1 = GetOctaveNoise( octaveUVMatrix1, cellCounts1, fragmentCoords, sampleDistanceAmplifier, InputNoiseImage, inputTextureDimensions);
+    float octaveNoise2 = GetOctaveNoise( octaveUVMatrix2, cellCounts2, fragmentCoords, sampleDistanceAmplifier, InputNoiseImage, inputTextureDimensions);
+    float octaveNoise3 = GetOctaveNoise( octaveUVMatrix3, cellCounts3, fragmentCoords, sampleDistanceAmplifier, InputNoiseImage, inputTextureDimensions);
+    float octaveNoise4 = GetOctaveNoise( octaveUVMatrix4, cellCounts4, fragmentCoords, sampleDistanceAmplifier, InputNoiseImage, inputTextureDimensions);
+    float octaveNoise5 = GetOctaveNoise( octaveUVMatrix5, cellCounts5, fragmentCoords, sampleDistanceAmplifier, InputNoiseImage, inputTextureDimensions);
     
     
     // speaking in ratios, we just say these are our terms of the overall mixing ratio

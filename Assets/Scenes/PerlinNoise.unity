@@ -4355,12 +4355,14 @@ MonoBehaviour:
   performedCompute: 0
   showingOnPreview: 0
   safeToPerform: 0
-  inputNoiseManager: {fileID: 11614625}
+  inputNoiseManager: {fileID: 886752545}
   previewImage: {fileID: 1706776298}
   inputNoiseTexture: {fileID: 0}
   inputDimensions: {x: 0, y: 0}
   divideByTotalContribution: 1
-  uncenterNoiseValues: 0
+  uncenterNoiseValues: 1
+  samplePixelSpread: {x: 7, y: 7}
+  spreadSampling: 1
   gridCellNoiseOrigin1: {x: 0, y: 0}
   gridCellCount1: {x: 4, y: 4}
   gridCellUVMatrix1:
@@ -4380,7 +4382,7 @@ MonoBehaviour:
     e31: 0
     e32: 0
     e33: 1
-  octaveContribution1: 1
+  octaveContribution1: 0
   gridCellNoiseOrigin2: {x: 0, y: 0}
   gridCellCount2: {x: 8, y: 8}
   gridCellUVMatrix2:
@@ -4400,7 +4402,7 @@ MonoBehaviour:
     e31: 0
     e32: 0
     e33: 1
-  octaveContribution2: 0.5
+  octaveContribution2: 0
   gridCellNoiseOrigin3: {x: 0, y: 0}
   gridCellCount3: {x: 16, y: 16}
   gridCellUVMatrix3:
@@ -4420,7 +4422,7 @@ MonoBehaviour:
     e31: 0
     e32: 0
     e33: 1
-  octaveContribution3: 0.25
+  octaveContribution3: 0
   gridCellNoiseOrigin4: {x: 0, y: 0}
   gridCellCount4: {x: 16, y: 16}
   gridCellUVMatrix4:
@@ -4440,7 +4442,7 @@ MonoBehaviour:
     e31: 0
     e32: 0
     e33: 1
-  octaveContribution4: 0.125
+  octaveContribution4: 0
   gridCellNoiseOrigin5: {x: 0, y: 0}
   gridCellCount5: {x: 32, y: 32}
   gridCellUVMatrix5:
@@ -4460,7 +4462,7 @@ MonoBehaviour:
     e31: 0
     e32: 0
     e33: 1
-  octaveContribution5: 0.0625
+  octaveContribution5: 0
 --- !u!1 &1554263153
 GameObject:
   m_ObjectHideFlags: 0

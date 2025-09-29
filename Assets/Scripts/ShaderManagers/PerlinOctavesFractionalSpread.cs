@@ -21,6 +21,11 @@ public class PerlinOctavesFractionalSpread : ShaderManager
     [Tooltip("attempt to move from [-1.0,1.0] to [0.0,1.0]")]
     public bool uncenterNoiseValues = false;
     [Space(15)]
+    [Tooltip("pixels between input samples")]
+    public Vector2 samplePixelSpread = Vector2.one;
+    [Tooltip("should we spread out the sampling of pixels")]
+    public bool spreadSampling = false;
+    [Space(15)]
     public Vector2 gridCellNoiseOrigin1 = Vector2.zero;
     public Vector2 gridCellCount1 = Vector2.one * 4;
     public Matrix4x4 gridCellUVMatrix1 = Matrix4x4.identity;
@@ -88,8 +93,12 @@ public class PerlinOctavesFractionalSpread : ShaderManager
         computeShader.SetFloat("octaveContribution4", octaveContribution4);
         computeShader.SetFloat("octaveContribution5", octaveContribution5);
 
+        float[] samplePixelSpreadArray = samplePixelSpread.ToArray();
+        computeShader.SetFloats("samplePixelSpread", samplePixelSpreadArray);
+
         computeShader.SetInt("divideByTotalContribution", ((divideByTotalContribution)?trueIntValue:falseIntValue));
         computeShader.SetInt("uncenterNoiseValues", ((uncenterNoiseValues)?trueIntValue:falseIntValue));
+        computeShader.SetInt("spreadSampling", ((spreadSampling)?trueIntValue:falseIntValue));
 
     }
     public override void UpdatePreview(){
