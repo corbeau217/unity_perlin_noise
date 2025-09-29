@@ -62,7 +62,7 @@ float2 inputNoiseAsVector(float4 inputNoiseColour){
 //      is the texture to sample our noise from
 // inputTextureDimensions
 //      is the size of the input noise texture
-float CornerContribution(float2 gridSpaceFraction, float2 cornerOffset, float2 cellUVCoords, RWTexture2D<float4> inputNoiseTexture, uint2 inputTextureDimensions){
+float GetCornerContribution(float2 gridSpaceFraction, float2 cornerOffset, float2 cellUVCoords, RWTexture2D<float4> inputNoiseTexture, uint2 inputTextureDimensions){
     // ======= get the corner vector =======
 
     // prepare the cell corner pixel location in our input noise
@@ -89,6 +89,48 @@ float CornerContribution(float2 gridSpaceFraction, float2 cornerOffset, float2 c
     
     return resultValue;
 }
+
+// this is the bulk of our noise fetching code
+//  we move this to a separate function so we dont have to repeat each of these lines in subsequent octaves
+float4 GetOctaveNoise(float4x4 octaveUVMatrix, float4 uvCoords, RWTexture2D<float4> inputNoiseTexture, uint2 inputTextureDimensions){
+    
+    // try using our new style of figuring it out
+    //  using matrix math
+    float4 gridPositionFraction1 = mul( octaveUVMatrix, uvCoords );
+
+    // make sure that we're within the grid
+    //  modulo is incase we were given some weird location
+    // float2 gridPositionFraction = float2(uvCoords.x%1.0*cellCounts1.x, uvCoords.y%1.0*cellCounts1.y );
+
+    // now find the cell locations
+    // the ends should still continue all the way up to 0.999999999999 and then go back to 0.0 anyway
+    float2 cellUV1 = float2( gridPositionFraction1.x%1.0, gridPositionFraction1.y%1.0 );
+    // this is for interpolating our corners together
+    float2 smoothCellUV1 = float2(smoothFunction(cellUV1.x),smoothFunction(cellUV1.y));
+
+    // ======= get cell uv difference vectors ====
+
+    // get the corner vectors in "cell UV space"
+    float2 cornerUVLocation_bottomLeft  = float2( 0.0, 0.0 );
+    float2 cornerUVLocation_bottomRight = float2( 1.0, 0.0 );
+    float2 cornerUVLocation_topLeft     = float2( 0.0, 1.0 );
+    float2 cornerUVLocation_topRight    = float2( 1.0, 1.0 );
+
+    // ======= get corner contributions ====
+    // use da function we made
+    float contribution1_bottomLeft  = GetCornerContribution( gridPositionFraction1.xy, cornerUVLocation_bottomLeft, cellUV1, inputNoiseTexture, inputTextureDimensions );
+    float contribution1_bottomRight = GetCornerContribution( gridPositionFraction1.xy, cornerUVLocation_bottomRight, cellUV1, inputNoiseTexture, inputTextureDimensions );
+    float contribution1_topLeft     = GetCornerContribution( gridPositionFraction1.xy, cornerUVLocation_topLeft, cellUV1, inputNoiseTexture, inputTextureDimensions );
+    float contribution1_topRight    = GetCornerContribution( gridPositionFraction1.xy, cornerUVLocation_topRight, cellUV1, inputNoiseTexture, inputTextureDimensions );
+
+    // ======= interpolate our 4 values ====
+
+    float dotsInterpolated1 = bilinearInterpolation(contribution1_bottomLeft, contribution1_bottomRight, contribution1_topLeft, contribution1_topRight, smoothCellUV1);
+    float4 octaveColour1 = float4(dotsInterpolated1,dotsInterpolated1,dotsInterpolated1,1.0);
+
+    return octaveColour1;
+}
+
 
 // ==================================================
 // ==================================================
@@ -119,46 +161,17 @@ void PerlinNoiseWithOctaves (uint3 id : SV_DispatchThreadID)
     // convert to floats, we dont like doing that mid equation?
     float2 texelLocation = float2( id.x, id.y);
     float2 outputResolution = float2( textureWidth, textureHeight);
+
     // to make sure we're retreiving our data correctly
     uint2 inputTextureDimensions = uint2( noiseTextureWidth, noiseTextureHeight );
 
-    // find where we are in the noise texture space
-    float4 uvCoords = float4( (texelLocation.x / outputResolution.x), (texelLocation.y / outputResolution.y), 0.0, 1.0 );
+    // find where we are in the output texture's uv space
+    float4 fragmentCoords = float4( (texelLocation.x / outputResolution.x), (texelLocation.y / outputResolution.y), 0.0, 1.0 );
 
-    // try using our new style of figuring it out
-    float4 gridPositionFraction1 = mul(octaveUVMatrix1,uvCoords);
+    // request the noise for that octave
+    float4 octaveNoise1 = GetOctaveNoise( octaveUVMatrix1, fragmentCoords, InputNoiseImage, inputTextureDimensions);
 
-    // make sure that we're within the grid
-    //  modulo is incase we were given some weird location
-    // float2 gridPositionFraction = float2(uvCoords.x%1.0*cellCounts1.x, uvCoords.y%1.0*cellCounts1.y );
-
-    // now find the cell locations
-    // the ends should still continue all the way up to 0.999999999999 and then go back to 0.0 anyway
-    float2 cellUV1 = float2( gridPositionFraction1.x%1.0, gridPositionFraction1.y%1.0 );
-    // this is for interpolating our corners together
-    float2 smoothCellUV1 = float2(smoothFunction(cellUV1.x),smoothFunction(cellUV1.y));
-
-    // ======= get cell uv difference vectors ====
-
-    // get the corner vectors in "cell UV space"
-    float2 cornerUVLocation_bottomLeft  = float2( 0.0, 0.0 );
-    float2 cornerUVLocation_bottomRight = float2( 1.0, 0.0 );
-    float2 cornerUVLocation_topLeft     = float2( 0.0, 1.0 );
-    float2 cornerUVLocation_topRight    = float2( 1.0, 1.0 );
-
-    // ======= get corner contributions ====
-    // use da function we made
-    float contribution1_bottomLeft  = CornerContribution( gridPositionFraction1.xy, cornerUVLocation_bottomLeft, cellUV1, InputNoiseImage, inputTextureDimensions );
-    float contribution1_bottomRight = CornerContribution( gridPositionFraction1.xy, cornerUVLocation_bottomRight, cellUV1, InputNoiseImage, inputTextureDimensions );
-    float contribution1_topLeft     = CornerContribution( gridPositionFraction1.xy, cornerUVLocation_topLeft, cellUV1, InputNoiseImage, inputTextureDimensions );
-    float contribution1_topRight    = CornerContribution( gridPositionFraction1.xy, cornerUVLocation_topRight, cellUV1, InputNoiseImage, inputTextureDimensions );
-
-    // ======= interpolate our 4 values ====
-
-    float dotsInterpolated1 = bilinearInterpolation(contribution1_bottomLeft, contribution1_bottomRight, contribution1_topLeft, contribution1_topRight, smoothCellUV1);
-
-    // just take it as it is
-    float4 outputColour = float4(dotsInterpolated1,dotsInterpolated1,dotsInterpolated1,1.0);
+    float4 outputColour = octaveNoise1;
     
 
     // save it
