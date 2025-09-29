@@ -12,6 +12,7 @@ public class ShaderManager : MonoBehaviour
     public RenderTexture outputTexture;
     public Vector2Int outputDimensions = Vector2Int.one * 256;
     public string ouputName = "ResultImage";
+    public FilterMode outputFilterMode = FilterMode.Bilinear;
     [Space(10)]
     public bool performedCompute = false;
     public bool showingOnPreview = false;
@@ -37,6 +38,7 @@ public class ShaderManager : MonoBehaviour
 
     private void PrepareRenderTextures(){
         this.outputTexture = new RenderTexture(outputDimensions.x, outputDimensions.y, 0);
+        this.outputTexture.filterMode = outputFilterMode;
         this.outputTexture.enableRandomWrite = true;
         this.outputTexture.Create();
     }

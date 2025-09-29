@@ -102,8 +102,8 @@ float GetOctaveNoise(float4x4 octaveUVTransformationMatrix, float2 octaveCellCou
     // we do this to preemptively solve any issues during indexing that might happen in really high resolution noise sampling
     //  where our position might slightly be over the number of cells we want, also to wrap our octave's grid 
     //  (remove these two lines if you dont want the octave corners to wrap around in their grid spaces)
-    octaveGridSpaceCoord.x = octaveGridSpaceCoord.x%octaveCellCounts.x;
-    octaveGridSpaceCoord.y = octaveGridSpaceCoord.y%octaveCellCounts.y;
+    // octaveGridSpaceCoord.x = octaveGridSpaceCoord.x%octaveCellCounts.x;
+    // octaveGridSpaceCoord.y = octaveGridSpaceCoord.y%octaveCellCounts.y;
 
 
     // now find the cell locations
@@ -153,17 +153,20 @@ float4x4 octaveUVMatrix1;
 float4x4 octaveUVMatrix2;
 float4x4 octaveUVMatrix3;
 float4x4 octaveUVMatrix4;
+float4x4 octaveUVMatrix5;
 
 // cells which we have vectors at the corners
 float2 cellCounts1;
 float2 cellCounts2;
 float2 cellCounts3;
 float2 cellCounts4;
+float2 cellCounts5;
 
 float octaveContribution1;
 float octaveContribution2;
 float octaveContribution3;
 float octaveContribution4;
+float octaveContribution5;
 
 
 
@@ -187,11 +190,7 @@ void PerlinNoiseWithOctaves (uint3 id : SV_DispatchThreadID)
     float octaveNoise2 = GetOctaveNoise( octaveUVMatrix2, cellCounts2, fragmentCoords, InputNoiseImage, inputTextureDimensions);
     float octaveNoise3 = GetOctaveNoise( octaveUVMatrix3, cellCounts3, fragmentCoords, InputNoiseImage, inputTextureDimensions);
     float octaveNoise4 = GetOctaveNoise( octaveUVMatrix4, cellCounts4, fragmentCoords, InputNoiseImage, inputTextureDimensions);
-
-    // // move to [0.0,1.0] range 
-    // octaveNoise1 = (octaveNoise1+1.0)/2.0;
-    // octaveNoise2 = (octaveNoise2+1.0)/2.0;
-    // octaveNoise3 = (octaveNoise3+1.0)/2.0;
+    float octaveNoise5 = GetOctaveNoise( octaveUVMatrix5, cellCounts5, fragmentCoords, InputNoiseImage, inputTextureDimensions);
     
     
     // speaking in ratios, we just say these are our terms of the overall mixing ratio
@@ -199,12 +198,13 @@ void PerlinNoiseWithOctaves (uint3 id : SV_DispatchThreadID)
     float octaveTerm2 = octaveNoise2 * octaveContribution2;
     float octaveTerm3 = octaveNoise3 * octaveContribution3;
     float octaveTerm4 = octaveNoise4 * octaveContribution4;
+    float octaveTerm5 = octaveNoise5 * octaveContribution5;
     
-    float mixedNoise = (octaveNoise1+octaveNoise2+octaveNoise3+octaveNoise4);
+    float mixedNoise = (octaveNoise1+octaveNoise2+octaveNoise3+octaveNoise4+octaveNoise5);
 
-    // // normalising it?
-    // float octaveRatioTotal = octaveContribution1 + octaveContribution2 + octaveContribution3 + octaveContribution4;
-    // mixedNoise /= octaveRatioTotal;
+    // normalising it?
+    float octaveRatioTotal = octaveContribution1 + octaveContribution2 + octaveContribution3 + octaveContribution4 + octaveContribution5;
+    mixedNoise /= octaveRatioTotal;
 
     // bring to [0.0,1.0] range
     mixedNoise = (mixedNoise+1.0)/2.0;
