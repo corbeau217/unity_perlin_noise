@@ -19,6 +19,7 @@ public class ShaderManager : MonoBehaviour
     public bool safeToPerform = true;
     
     void Start(){
+        OverrideShaderKernelName();
         SettingOverrides();
         this.PrepareRenderTextures();
     }
@@ -55,8 +56,11 @@ public class ShaderManager : MonoBehaviour
     }
 
     // stuff be overriden in derived classes
+    public virtual void OverrideShaderKernelName(){
+        // ...
+    }
     public virtual void SettingOverrides(){
-        //...
+        // ...
     }
     public virtual void AssignComputeBuffers(int kernelIndex){
         computeShader.SetTexture(kernelIndex, ouputName, outputTexture);
